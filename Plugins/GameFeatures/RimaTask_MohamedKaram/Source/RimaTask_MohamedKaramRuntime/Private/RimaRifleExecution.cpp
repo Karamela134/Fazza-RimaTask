@@ -30,6 +30,9 @@ void URimaRifleExecution::Execute_Implementation(const FGameplayEffectCustomExec
         return;
     }
 
+    const FGameplayEffectSpec& Spec = ExecutionParams.GetOwningSpec();
+    FGameplayTag SplashTag = FGameplayTag::RequestGameplayTag(FName("Data.Modifier.SplashMultiplier"));
+    float FinalMultiplier = Spec.GetSetByCallerMagnitude(SplashTag, false, 1.0f);
 
     if (TeamSubsystem)
     {
@@ -40,11 +43,11 @@ void URimaRifleExecution::Execute_Implementation(const FGameplayEffectCustomExec
         switch (Comparison)
         {
         case ELyraTeamComparison::OnSameTeam:
-            Heal(ExecutionOutput, TargetActor,TargetASC);
+            Heal(ExecutionOutput, TargetActor,TargetASC, FinalMultiplier);
             break;
 
         case ELyraTeamComparison::DifferentTeams:
-            Damage(ExecutionOutput, TargetActor, TargetASC);
+            Damage(ExecutionOutput, TargetActor, TargetASC, FinalMultiplier);
             break;
 
         default:
@@ -52,9 +55,9 @@ void URimaRifleExecution::Execute_Implementation(const FGameplayEffectCustomExec
         }
     }
 }
-void URimaRifleExecution::Heal(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* ally, UAbilitySystemComponent* TargetASC) const
+void URimaRifleExecution::Heal(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* ally, UAbilitySystemComponent* TargetASC,float FinalMultiplier) const
 {
-    ExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(ULyraHealthSet::GetHealthAttribute(), EGameplayModOp::Additive, BaseHealing));
+    ExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(ULyraHealthSet::GetHealthAttribute(), EGameplayModOp::Additive, BaseHealing* FinalMultiplier));
     CheckNetworkMode(ally);
     if (TargetASC && ally)
     {
@@ -69,9 +72,9 @@ void URimaRifleExecution::Heal(FGameplayEffectCustomExecutionOutput& ExecutionOu
     UE_LOG(LogTemp, Log, TEXT("Healed"));
 }
 
-void URimaRifleExecution::Damage(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* enemy, UAbilitySystemComponent* TargetASC) const
+void URimaRifleExecution::Damage(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* enemy, UAbilitySystemComponent* TargetASC,float FinalMultiplier) const
 {
-    ExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(ULyraHealthSet::GetHealthAttribute(), EGameplayModOp::Additive, -BaseDamage));
+    ExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(ULyraHealthSet::GetHealthAttribute(), EGameplayModOp::Additive, -BaseDamage* FinalMultiplier));
     CheckNetworkMode(enemy);
     if (TargetASC && enemy)
     {

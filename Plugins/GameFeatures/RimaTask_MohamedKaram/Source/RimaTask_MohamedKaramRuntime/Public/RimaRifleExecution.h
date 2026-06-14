@@ -15,8 +15,8 @@ class RIMATASK_MOHAMEDKARAMRUNTIME_API URimaRifleExecution : public UGameplayEff
 	GENERATED_BODY()
 
 private:
-	void Heal(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* ally, UAbilitySystemComponent* TargetASC) const;
-	void Damage(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* enemy, UAbilitySystemComponent* TargetASC) const;
+	void Heal(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* ally, UAbilitySystemComponent* TargetASC, float FinalMultiplier) const;
+	void Damage(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* enemy, UAbilitySystemComponent* TargetASC, float FinalMultiplier) const;
 	void CheckNetworkMode(AActor* target) const;
 
 public:
