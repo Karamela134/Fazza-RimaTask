@@ -1,5 +1,5 @@
 #include "RimaGameplayAbility_Grapple.h"
-#include "Abilities/Tasks/AbilityTask_ApplyRootMotionMoveToForce.h" // The real header!
+#include "Abilities/Tasks/AbilityTask_ApplyRootMotionMoveToForce.h" 
 #include "AbilitySystemComponent.h"
 #include "GameFramework/RootMotionSource.h"
 #include "Abilities/GameplayAbility.h"
@@ -32,7 +32,6 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
         return;
     }
 
-    // 1. Calculate Aim Trajectory
     FVector CameraLocation;
     FRotator CameraRotation;
     PC->GetPlayerViewPoint(CameraLocation, CameraRotation);
@@ -56,15 +55,13 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
 
     bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, TraceParams);
 
-    // 2. ALWAYS Trigger Fire Visuals (Predictive execution)
     if (GrappleFireCueTag.IsValid())
     {
         FGameplayEffectContextHandle Context = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
-        Context.AddHitResult(HitResult); // Pass the hit point down for visual tracer rendering
+        Context.AddHitResult(HitResult); 
         GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(GrappleFireCueTag, Context);
     }
 
-    // 3. Process Logic Branching
     if (bHit && HitResult.GetActor())
     {
         FVector TargetLocation = HitResult.ImpactPoint;
@@ -93,14 +90,13 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
         DrawDebugSphere(
             GetWorld(),
             TargetLocation,
-            30.0f,     // Radius
-            12,        // Segments
+            30.0f,     
+            12,        
             FColor::Cyan,
-            false,     // Persistent
-            5.0f       // Lifetime
+            false,     
+            5.0f       
         );
 
-        // Dynamic Duration Calculation to maintain a constant travel speed
         float Distance = FVector::Distance(Avatar->GetActorLocation(), TargetLocation);
         float CalculatedDuration = (TravelSpeed > 0.0f) ? (Distance / TravelSpeed) : 0.5f;
 
@@ -110,17 +106,16 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
                 FName("GrapplePullTask"),
                 TargetLocation,
                 CalculatedDuration,
-                true,                                                          // bSetNewMovementMode -> CHANGE TO TRUE
-                MOVE_Flying,                                                   // NewMovementMode -> CHANGE TO MOVE_Flying
-                false,                                                         // bRestrictSpeedToExpected
-                nullptr,                                                       // PathOffsetCurve
-                ERootMotionFinishVelocityMode::MaintainLastRootMotionVelocity, // FinishVelocityMode
-                FVector::ZeroVector,                                           // FinishSetVelocity
-                0.0f                                                           // FinishClampVelocity
+                true,                                                          
+                MOVE_Flying,                                                   
+                false,                                                        
+                nullptr,                                                       
+                ERootMotionFinishVelocityMode::MaintainLastRootMotionVelocity, 
+                FVector::ZeroVector,                                           
+                0.0f                                                           
             );
         if (MoveTask)
         {
-            // Change .OnFinished to .OnTimedOutAndMoveFinished
             MoveTask->OnTimedOutAndDestinationReached.AddDynamic(this, &URimaGameplayAbility_Grapple::OnGrappleMovementFinished);
 
             MoveTask->ReadyForActivation();
@@ -134,7 +129,6 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
     }
     else
     {
-        // Trace missed: Trigger quick retract sequence and close the ability out
         if (GrappleRetractCueTag.IsValid())
         {
             FGameplayEffectContextHandle Context = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
@@ -153,7 +147,6 @@ void URimaGameplayAbility_Grapple::EndAbility(const FGameplayAbilitySpecHandle H
 
 void URimaGameplayAbility_Grapple::OnGrappleMovementFinished()
 {
-    // Ensure bReplicateEndAbility is true so both sides match closure states
     bool bReplicateEndAbility = true;
     UE_LOG(LogTemp, Log, TEXT("Grapple Movement Finished"));
 

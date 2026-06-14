@@ -11,7 +11,6 @@ URimaRifleExecution::URimaRifleExecution()
 
 void URimaRifleExecution::Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, FGameplayEffectCustomExecutionOutput& ExecutionOutput) const
 {
-    // 1. Get the Ability System Components for Target and Source
     UAbilitySystemComponent* TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
     UAbilitySystemComponent* SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
 
@@ -21,7 +20,6 @@ void URimaRifleExecution::Execute_Implementation(const FGameplayEffectCustomExec
     if (!TargetActor || !SourceActor) return;
 
 
-    // 2. Grab Lyra's global Team Subsystem from the world
     UWorld* World = TargetActor->GetWorld();
     ULyraTeamSubsystem* TeamSubsystem = World ? World->GetSubsystem<ULyraTeamSubsystem>() : nullptr;
 
@@ -43,7 +41,6 @@ void URimaRifleExecution::Execute_Implementation(const FGameplayEffectCustomExec
 
     if (TeamSubsystem)
     {
-        // 3. Compare the shooter and the victim
         ELyraTeamComparison Comparison =
             TeamSubsystem->CompareTeams(SourceActor, TargetActor);
 
@@ -68,12 +65,10 @@ void URimaRifleExecution::Heal(FGameplayEffectCustomExecutionOutput& ExecutionOu
     CheckNetworkMode(ally);
     if (TargetASC && ally)
     {
-        // Pack context parameters to send down to the client visual pipeline
         FGameplayCueParameters CueParams;
         CueParams.Location = ally->GetActorLocation();
-        CueParams.RawMagnitude = BaseHealing; // Optional: Pass numbers to scale effects dynamically
+        CueParams.RawMagnitude = BaseHealing; 
 
-        // This triggers a replicated broadcast across the network
         TargetASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.RimaRifle.Heal")), CueParams);
     }
     UE_LOG(LogTemp, Log, TEXT("Healed %s"),*ally->GetName());

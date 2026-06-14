@@ -18,14 +18,12 @@ public:
 protected:
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
-    // Configuration Properties
     UPROPERTY(EditDefaultsOnly, Category = "Grapple|Settings")
     float MaxGrappleDistance = 2500.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Grapple|Settings")
     float TravelSpeed = 3000.0f;
 
-    // Gameplay Cues for Cosmetics
     UPROPERTY(EditDefaultsOnly, Category = "Grapple|Cosmetics")
     FGameplayTag GrappleFireCueTag;
 
