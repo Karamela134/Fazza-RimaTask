@@ -20,6 +20,7 @@ void URimaRifleExecution::Execute_Implementation(const FGameplayEffectCustomExec
 
     if (!TargetActor || !SourceActor) return;
 
+
     // 2. Grab Lyra's global Team Subsystem from the world
     UWorld* World = TargetActor->GetWorld();
     ULyraTeamSubsystem* TeamSubsystem = World ? World->GetSubsystem<ULyraTeamSubsystem>() : nullptr;
@@ -33,6 +34,12 @@ void URimaRifleExecution::Execute_Implementation(const FGameplayEffectCustomExec
     const FGameplayEffectSpec& Spec = ExecutionParams.GetOwningSpec();
     FGameplayTag SplashTag = FGameplayTag::RequestGameplayTag(FName("Data.Modifier.SplashMultiplier"));
     float FinalMultiplier = Spec.GetSetByCallerMagnitude(SplashTag, false, 1.0f);
+
+    UE_LOG(LogTemp, Warning, TEXT("=== GEC RUNNING FOR TARGET: %s (Multiplier: %f) ==="), *TargetActor->GetName(), FinalMultiplier);
+    if (FinalMultiplier == 0.5f)
+    {
+        UE_LOG(LogTemp, Log, TEXT("found surrounding ally/enemy"));
+    }
 
     if (TeamSubsystem)
     {
@@ -69,7 +76,7 @@ void URimaRifleExecution::Heal(FGameplayEffectCustomExecutionOutput& ExecutionOu
         // This triggers a replicated broadcast across the network
         TargetASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.RimaRifle.Heal")), CueParams);
     }
-    UE_LOG(LogTemp, Log, TEXT("Healed"));
+    UE_LOG(LogTemp, Log, TEXT("Healed %s"),*ally->GetName());
 }
 
 void URimaRifleExecution::Damage(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* enemy, UAbilitySystemComponent* TargetASC,float FinalMultiplier) const
@@ -84,7 +91,7 @@ void URimaRifleExecution::Damage(FGameplayEffectCustomExecutionOutput& Execution
 
         TargetASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.RimaRifle.Damage")), CueParams);
     }
-    UE_LOG(LogTemp, Log, TEXT("Damaged"));
+    UE_LOG(LogTemp, Log, TEXT("Damaged %s"), *enemy->GetName());
 }
 
 void URimaRifleExecution::CheckNetworkMode(AActor* target) const
