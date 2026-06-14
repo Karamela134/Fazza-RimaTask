@@ -44,7 +44,7 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
         GetWorld(),
         TraceStart,
         TraceEnd,
-        FColor::Green,
+        FColor::Cyan,
         false,
         5.0f,
         0,
@@ -95,7 +95,7 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
             TargetLocation,
             30.0f,     // Radius
             12,        // Segments
-            FColor::Green,
+            FColor::Cyan,
             false,     // Persistent
             5.0f       // Lifetime
         );

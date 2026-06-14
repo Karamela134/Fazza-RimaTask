@@ -1,8 +1,8 @@
-#include "RimaRifleExecution.h"
+    #include "RimaRifleExecution.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/LyraHealthSet.h"
 #include "Teams/LyraTeamSubsystem.h"
-
+#include "DrawDebugHelpers.h"
 
 
 URimaRifleExecution::URimaRifleExecution()
@@ -40,38 +40,74 @@ void URimaRifleExecution::Execute_Implementation(const FGameplayEffectCustomExec
         switch (Comparison)
         {
         case ELyraTeamComparison::OnSameTeam:
-            Heal(ExecutionOutput);
+            Heal(ExecutionOutput, TargetActor,TargetASC);
             break;
 
         case ELyraTeamComparison::DifferentTeams:
-            Damage(ExecutionOutput);
+            Damage(ExecutionOutput, TargetActor, TargetASC);
             break;
 
         default:
             return;
         }
     }
-    //bool bIsFriendly = false;
-    //// 5. Apply the calculated modifiers based on the team status
-    //if (bIsFriendly)
-    //{
-    //    // Ally hit -> Heal them (Positive Additive change)
-    //    ExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(ULyraHealthSet::GetHealthAttribute(), EGameplayModOp::Additive, BaseHealing));
-    //}
-    //else
-    //{
-    //    // Enemy hit -> Damage them (Negative Additive change)
-    //    ExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(ULyraHealthSet::GetHealthAttribute(), EGameplayModOp::Additive, -BaseDamage));
-    //}
 }
-void URimaRifleExecution::Heal(FGameplayEffectCustomExecutionOutput& ExecutionOutput) const
+void URimaRifleExecution::Heal(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* ally, UAbilitySystemComponent* TargetASC) const
 {
     ExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(ULyraHealthSet::GetHealthAttribute(), EGameplayModOp::Additive, BaseHealing));
+    CheckNetworkMode(ally);
+    if (TargetASC && ally)
+    {
+        // Pack context parameters to send down to the client visual pipeline
+        FGameplayCueParameters CueParams;
+        CueParams.Location = ally->GetActorLocation();
+        CueParams.RawMagnitude = BaseHealing; // Optional: Pass numbers to scale effects dynamically
+
+        // This triggers a replicated broadcast across the network
+        TargetASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.RimaRifle.Heal")), CueParams);
+    }
     UE_LOG(LogTemp, Log, TEXT("Healed"));
 }
 
-void URimaRifleExecution::Damage(FGameplayEffectCustomExecutionOutput& ExecutionOutput) const
+void URimaRifleExecution::Damage(FGameplayEffectCustomExecutionOutput& ExecutionOutput, AActor* enemy, UAbilitySystemComponent* TargetASC) const
 {
     ExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(ULyraHealthSet::GetHealthAttribute(), EGameplayModOp::Additive, -BaseDamage));
+    CheckNetworkMode(enemy);
+    if (TargetASC && enemy)
+    {
+        FGameplayCueParameters CueParams;
+        CueParams.Location = enemy->GetActorLocation();
+        CueParams.RawMagnitude = BaseDamage;
+
+        TargetASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.RimaRifle.Damage")), CueParams);
+    }
     UE_LOG(LogTemp, Log, TEXT("Damaged"));
+}
+
+void URimaRifleExecution::CheckNetworkMode(AActor* target) const
+{
+    ENetMode NetMode = target->GetWorld()->GetNetMode();
+
+    FString ModeString;
+
+    switch (NetMode)
+    {
+    case NM_Standalone:
+        ModeString = TEXT("Standalone");
+        break;
+
+    case NM_ListenServer:
+        ModeString = TEXT("ListenServer");
+        break;
+
+    case NM_DedicatedServer:
+        ModeString = TEXT("DedicatedServer");
+        break;
+
+    case NM_Client:
+        ModeString = TEXT("Client");
+        break;
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("Heal executed on %s"), *ModeString);
 }
