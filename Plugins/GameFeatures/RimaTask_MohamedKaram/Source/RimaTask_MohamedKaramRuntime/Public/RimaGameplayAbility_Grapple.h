@@ -32,6 +32,8 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Grapple|Cosmetics")
     FGameplayTag GrappleRetractCueTag;
 
+    virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
 private:
     UFUNCTION()
     void OnGrappleMovementFinished();

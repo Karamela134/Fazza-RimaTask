@@ -4,6 +4,9 @@
 #include "GameFramework/RootMotionSource.h"
 #include "Abilities/GameplayAbility.h"
 #include "GameFramework/PlayerController.h"
+#include "DrawDebugHelpers.h"
+#include "GameFramework/Character.h"
+#include "Components/CapsuleComponent.h"
 
 URimaGameplayAbility_Grapple::URimaGameplayAbility_Grapple()
 {
@@ -15,6 +18,7 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
 {
     if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
     {
+        UE_LOG(LogTemp, Log, TEXT("Grapple not commit abiltiy"));
         EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
         return;
     }
@@ -23,6 +27,7 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
     AActor* Avatar = ActorInfo->AvatarActor.Get();
     if (!PC || !Avatar)
     {
+        UE_LOG(LogTemp, Log, TEXT("Grapple Pc or avatar null"));
         EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
         return;
     }
@@ -34,6 +39,17 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
 
     FVector TraceStart = CameraLocation;
     FVector TraceEnd = TraceStart + (CameraRotation.Vector() * MaxGrappleDistance);
+
+    DrawDebugLine(
+        GetWorld(),
+        TraceStart,
+        TraceEnd,
+        FColor::Green,
+        false,
+        5.0f,
+        0,
+        2.0f
+    );
 
     FCollisionQueryParams TraceParams(FName(TEXT("GrappleTrace")), true, Avatar);
     FHitResult HitResult;
@@ -52,7 +68,37 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
     if (bHit && HitResult.GetActor())
     {
         FVector TargetLocation = HitResult.ImpactPoint;
-        TargetLocation += (HitResult.ImpactNormal * 40.0f); // Offset to prevent mesh clipping
+
+        // Default fallback offsets
+        float SafetyBuffer = 10.0f;
+        float CoreOffset = 40.0f;
+
+        // Query the actual capsule size to prevent collision crunch
+        if (ACharacter* Character = Cast<ACharacter>(Avatar))
+        {
+            if (UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
+            {
+                float Radius = Capsule->GetScaledCapsuleRadius();
+                float HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+
+                // Smoothly interpolate between Radius and HalfHeight depending on the surface angle.
+                // If hitting a flat floor (ImpactNormal.Z == 1), we use HalfHeight.
+                // If hitting a vertical wall (ImpactNormal.Z == 0), we use Radius.
+                CoreOffset = FMath::Lerp(Radius, HalfHeight, FMath::Abs(HitResult.ImpactNormal.Z));
+            }
+        }
+        // Apply the precise offset along the surface normal plus a tiny safety air-buffer
+        TargetLocation += HitResult.ImpactNormal * (CoreOffset + SafetyBuffer); 
+
+        DrawDebugSphere(
+            GetWorld(),
+            TargetLocation,
+            30.0f,     // Radius
+            12,        // Segments
+            FColor::Green,
+            false,     // Persistent
+            5.0f       // Lifetime
+        );
 
         // Dynamic Duration Calculation to maintain a constant travel speed
         float Distance = FVector::Distance(Avatar->GetActorLocation(), TargetLocation);
@@ -78,9 +124,11 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
             MoveTask->OnTimedOutAndDestinationReached.AddDynamic(this, &URimaGameplayAbility_Grapple::OnGrappleMovementFinished);
 
             MoveTask->ReadyForActivation();
+            UE_LOG(LogTemp, Log, TEXT("Grapple activated"));
         }
         else
         {
+            UE_LOG(LogTemp, Log, TEXT("Grapple Move Task null"));
             EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
         }
     }
@@ -97,9 +145,17 @@ void URimaGameplayAbility_Grapple::ActivateAbility(const FGameplayAbilitySpecHan
     }
 }
 
+void URimaGameplayAbility_Grapple::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+    Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+    UE_LOG(LogTemp, Log, TEXT("Grapple End Ability"));
+}
+
 void URimaGameplayAbility_Grapple::OnGrappleMovementFinished()
 {
     // Ensure bReplicateEndAbility is true so both sides match closure states
     bool bReplicateEndAbility = true;
+    UE_LOG(LogTemp, Log, TEXT("Grapple Movement Finished"));
+
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, bReplicateEndAbility, false);
 }
